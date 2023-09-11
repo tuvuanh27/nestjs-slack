@@ -5,7 +5,7 @@ import {
   Type,
 } from '@nestjs/common';
 import { WebClientOptions } from '@slack/web-api';
-import { Channels } from './plugin';
+import { ObjectChannel, StringChannel } from './plugin';
 
 export interface SlackApiOptions {
   type: 'api';
@@ -50,16 +50,13 @@ export interface SlackMultipleWebhooksOptions {
    *
    * Read more: https://api.slack.com/messaging/webhooks
    */
-  channels: {
-    name: string;
-    url: string;
-  }[];
+  channels: ObjectChannel[];
 
   /**
    * This option is used when channel isn't defined
    * when sending a request.
    */
-  defaultChannel?: Channels;
+  defaultChannel?: StringChannel;
 }
 
 export interface SlackStdoutOptions {
@@ -96,7 +93,7 @@ export type SlackSyncConfig = SlackConfig & {
 export interface SlackAsyncConfig extends Pick<ModuleMetadata, 'imports'> {
   useClass?: Type<SlackConfigFactory>;
   useFactory?: (...args: unknown[]) => Promise<SlackConfig> | SlackConfig;
-  inject?: Array<InjectionToken | OptionalFactoryDependency>;
+  inject?: (InjectionToken | OptionalFactoryDependency)[];
   useExisting?: Type<SlackConfigFactory>;
 
   // If true, registers `SlackModule` as a global module.

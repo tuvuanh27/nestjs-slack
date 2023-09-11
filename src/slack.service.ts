@@ -9,15 +9,15 @@ import {
   SLACK_MODULE_OPTIONS,
   SLACK_WEB_CLIENT,
 } from './constants';
-import { Channels } from './plugin';
+import { ObjectChannel, StringChannel } from './plugin';
 import type { SlackConfig } from './types';
 
-export type SlackMessageOptions<C = Channels> = Partial<
+export type SlackMessageOptions<C = StringChannel | ObjectChannel> = Partial<
   ChatPostMessageArguments & { channel: C }
 >;
 
 @Injectable()
-export class SlackService<C = Channels> {
+export class SlackService<C = StringChannel | ObjectChannel> {
   constructor(
     @Inject(SLACK_MODULE_OPTIONS) private readonly options: SlackConfig,
     @Inject(SLACK_WEB_CLIENT) public readonly client: WebClient | null,
@@ -103,8 +103,7 @@ export class SlackService<C = Channels> {
    *  }
    * }
    * ```
-   * @param blocks
-   * @param opts
+   * @param req
    */
   async postMessage(req: SlackMessageOptions<C>): Promise<void> {
     const requestTypes = {
@@ -136,19 +135,25 @@ export class SlackService<C = Channels> {
     invariant(this.options.type === 'webhook', 'expected type to be webhook');
 
     if ('channels' in this.options) {
-      const {
-        channel: userDefinedChannel = this.options.defaultChannel,
-        ...slackRequest
-      } = req;
+      const { channel: userDefinedChannel, ...slackRequest } = req;
 
       invariant(
         userDefinedChannel,
         'neither channel nor defaultChannel was applied',
       );
 
-      const channel = this.options.channels.find(
+      let channel = this.options.channels.find(
         c => c.name === userDefinedChannel,
       );
+
+      if (typeof userDefinedChannel !== 'string') {
+        channel = {
+          url:
+            (userDefinedChannel as ObjectChannel).url ??
+            this.options.defaultChannel,
+          name: (userDefinedChannel as ObjectChannel).name || 'default',
+        };
+      }
 
       if (!channel) {
         throw new Error(

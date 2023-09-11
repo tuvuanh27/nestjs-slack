@@ -1,7 +1,7 @@
-import { WebClient } from '@slack/web-api';
 import { BlockCollection, Blocks } from 'slack-block-builder';
 import { createApp } from './fixtures';
 import { SlackService } from '../slack.service';
+import { ObjectChannel } from '../plugin';
 
 describe('SlackService', () => {
   it('must be defined', async () => {
@@ -30,6 +30,24 @@ describe('SlackService', () => {
         const blocks = BlockCollection(Blocks.Section({ text: 'hello-world' }));
         await service.sendBlocks(blocks);
         expect(service.postMessage).toHaveBeenCalledWith({ blocks });
+      });
+
+      it('must forward to sendMessage with custom channel', async () => {
+        const blocks = BlockCollection(Blocks.Section({ text: 'hello-world' }));
+        const channel: ObjectChannel = {
+          name: 'my-channel',
+          url: 'https://hooks.slack.com/services/123456789/123456789/123456789',
+        };
+        await service.sendBlocks(blocks, {
+          channel,
+        });
+        expect(service.postMessage).toHaveBeenCalledWith({
+          blocks,
+          channel: {
+            name: 'my-channel',
+            url: 'https://hooks.slack.com/services/123456789/123456789/123456789',
+          },
+        });
       });
     });
 
